@@ -3,6 +3,19 @@ import fnmatch
 import warnings
 from typing import List, Union, Iterable
 
+class StreamWrapper:
+    # this is a wrapper class which wraps file/stream handle
+    def __init__(self, stream):
+        self.stream = stream
+    def read(self, *args, **kw):
+        res = self.stream.read(*args, **kw)
+        return res
+    def close(self):
+        self.stream.close()
+    def __del__(self):
+        self.close()
+
+
 def match_masks(name : str, masks : Union[str, List[str]]) -> bool:
     # empty mask matches any input name
     if not masks:
@@ -36,3 +49,17 @@ def get_file_pathnames_from_root(
                 yield os.path.join(path, f)
         if not recursive:
             break
+
+
+def get_file_binaries_from_pathnames(pathnames : Iterable):
+
+    if not isinstance(pathnames, Iterable):
+        warnings.warn("get_file_binaries_from_pathnames needs the input be an Iterable")
+        raise TypeError
+
+    for pathname in pathnames:
+        if not isinstance(pathname, str):
+            warnings.warn("file pathname must be string type, but got {}".format(type(pathname)))
+            raise TypeError
+
+        yield (pathname, StreamWrapper(open(pathname, 'rb')))
